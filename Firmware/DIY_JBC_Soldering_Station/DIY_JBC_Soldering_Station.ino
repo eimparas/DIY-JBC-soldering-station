@@ -1,4 +1,4 @@
-#include <max6675.h>
+#include <MAX6675.h>
 #include <LiquidCrystal.h>
 //=====pin definitions=====
 const int thermoDO = 4;
@@ -9,7 +9,7 @@ const int encoderPinB = 2;
 const int sleep_sensor = 12;
 const int heater = 13;
 unsigned volatile int tempset = 0;
-int temp = 0;
+float temp = 0;
 volatile int n = LOW;
 volatile int encoderPinALast = LOW;
 bool state;
@@ -18,9 +18,11 @@ const int stand_temp = 175;
 
 //=====object definitions ====
 LiquidCrystal lcd(A0, A1, A2, A3, A4, A5);
-MAX6675 thermocouple(thermoCLK, thermoCS, thermoDO);
+MAX6675 thermocouple; //(thermoCLK, thermoCS, thermoDO);
 
 void setup() {
+  thermocouple.begin(thermoCLK, thermoCS, thermoDO);
+  thermocouple.setSPIspeed(4000000);
 	pinMode(heater, OUTPUT);
 	pinMode(encoderPinA, INPUT_PULLUP);
 	pinMode(encoderPinB, INPUT_PULLUP);
@@ -43,11 +45,12 @@ void setup() {
 void loop() {
   
 	digitalWrite(heater, LOW);// to get themp  heater must be off
-    delay(400);
-	temp = thermocouple.readCelsius();
+  delay(200);
+  thermocouple.read();
+	temp = thermocouple.getTemperature()+25;
 
 	lcd.setCursor(5, 0);// curent temp display update 
-	lcd.print("   ");
+	lcd.print("       ");
 	lcd.setCursor(5, 0);
 	lcd.print(temp);
 
@@ -64,7 +67,9 @@ void loop() {
 	}
 
 
-	if (pid_enable == true) {		
+	if (pid_enable == true) {
+    lcd.setCursor(12, 1);
+    lcd.print(" RUN");		
 		 if (temp < tempset) {
 			  digitalWrite(heater, HIGH);
 		}
@@ -74,6 +79,8 @@ void loop() {
 	}
 	else
 	{
+    lcd.setCursor(12, 1);
+    lcd.print("STBY");
 		if (temp < stand_temp ){
 			digitalWrite(heater, HIGH);
 		}
@@ -88,7 +95,7 @@ void loop() {
 	Serial.print(tempset);
 	Serial.print("|");
 	Serial.println(millis());//test
-delay(900);
+delay(800);
 }
 
 void updateEncoder() {
